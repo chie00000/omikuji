@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ぼくのおみくじ">
+<meta name="theme-color" content="#1a1a2e">
+<title>ぼくのおみくじ</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&family=Kaisei+Decol:wght@700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --bg:#0f0c29; --card:#1a1740; --border:#2d2a5e;
+  --yellow:#FFD700; --orange:#FF6B35; --green:#4ECDC4;
+  --pink:#FF6B9D; --blue:#45B7D1; --purple:#A855F7;
+  --text:#F0F0FF; --muted:#8888BB;
+}
+body {
+  background:var(--bg); color:var(--text);
+  font-family:'Zen Maru Gothic',sans-serif;
+  min-height:100vh;
+  padding-bottom:max(env(safe-area-inset-bottom,0px),30px);
+  background-image: radial-gradient(ellipse at top, #1a0a3e 0%, #0f0c29 60%);
+}
+
+/* STARS BG */
+body::before {
+  content:''; position:fixed; top:0; left:0; right:0; bottom:0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, white, transparent),
+    radial-gradient(1px 1px at 80% 10%, white, transparent),
+    radial-gradient(1px 1px at 50% 60%, white, transparent),
+    radial-gradient(1px 1px at 10% 80%, white, transparent),
+    radial-gradient(1px 1px at 90% 70%, white, transparent),
+    radial-gradient(1px 1px at 35% 15%, white, transparent),
+    radial-gradient(1px 1px at 65% 85%, white, transparent),
+    radial-gradient(2px 2px at 45% 40%, #FFD700, transparent),
+    radial-gradient(2px 2px at 75% 55%, #FFD700, transparent);
+  pointer-events:none; z-index:0; opacity:0.6;
+}
+
+.wrap { position:relative; z-index:1; max-width:440px; margin:0 auto; padding:0 14px; }
+
+/* HEADER */
+.header {
+  text-align:center;
+  padding:max(env(safe-area-inset-top,0px),36px) 20px 24px;
+  position:relative; z-index:1;
+}
+.header-star { font-size:32px; animation:spin 8s linear infinite; display:inline-block; margin-bottom:6px; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.header-title {
+  font-family:'Kaisei Decol',serif; font-size:26px; font-weight:700;
+  background:linear-gradient(135deg,var(--yellow),var(--orange),var(--pink));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  margin-bottom:4px;
+}
+.header-name { font-size:12px; color:var(--muted); }
+
+/* DATE */
+.date-box {
+  background:rgba(255,255,255,0.06); border-radius:16px;
+  border:1px solid var(--border); padding:12px 16px;
+  margin:0 0 16px; display:flex; align-items:center; gap:10px;
+}
+.date-info { flex:1; }
+.date-lbl { font-size:10px; color:var(--muted); margin-bottom:2px; }
+.date-display { font-size:16px; font-weight:700; }
+input[type=date] {
+  background:rgba(255,255,255,0.1); border:1px solid var(--border);
+  border-radius:10px; padding:7px 10px; color:var(--text);
+  font-size:12px; font-family:'Zen Maru Gothic',sans-serif;
+}
+
+/* OMIKUJI BUTTON */
+.omikuji-wrap { text-align:center; margin-bottom:20px; }
+.omikuji-btn {
+  display:inline-block; padding:18px 48px;
+  background:linear-gradient(135deg,var(--yellow),var(--orange));
+  border-radius:50px; border:none; cursor:pointer;
+  font-family:'Kaisei Decol',serif; font-size:20px; font-weight:700;
+  color:#1a1a2e; box-shadow:0 4px 20px rgba(255,180,0,0.4);
+  transition:transform .15s, box-shadow .15s;
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100%{box-shadow:0 4px 20px rgba(255,180,0,0.4);}
+  50%{box-shadow:0 4px 40px rgba(255,180,0,0.7);}
+}
+.omikuji-btn:active { transform:scale(0.95); }
+.omikuji-sub { font-size:11px; color:var(--muted); margin-top:6px; }
+
+/* RESULT */
+.result-wrap { display:none; }
+.result-wrap.show { display:block; animation:fadeIn .5s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+/* OVERALL */
+.overall-card {
+  border-radius:20px; padding:24px 18px; margin-bottom:14px; text-align:center;
+  background:linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03));
+  border:2px solid var(--overall-color,var(--yellow));
+  box-shadow:0 0 40px var(--overall-glow,rgba(255,215,0,0.2));
+}
+.overall-emoji { font-size:56px; margin-bottom:8px; display:block; animation:bounce 1s ease infinite alternate; }
+@keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-8px)} }
+.overall-label { font-family:'Kaisei Decol',serif; font-size:36px; font-weight:700; margin-bottom:10px; }
+.overall-advice {
+  font-size:13px; line-height:1.7;
+  background:rgba(255,255,255,0.06); border-radius:12px; padding:12px 14px;
+  margin-bottom:16px;
+}
+.score-stars { font-size:24px; letter-spacing:4px; margin-bottom:4px; }
+
+/* MINI BARS */
+.mini-bars { display:flex; gap:6px; margin-top:12px; }
+.mini-col { flex:1; text-align:center; }
+.mini-track { height:40px; background:rgba(255,255,255,0.1); border-radius:6px; position:relative; overflow:hidden; margin-bottom:3px; }
+.mini-fill { position:absolute; bottom:0; width:100%; border-radius:6px; transition:height .8s ease; }
+.mini-lbl { font-size:9px; color:var(--muted); }
+.mini-val { font-size:10px; font-weight:700; }
+
+/* SECTION CARDS */
+.sec {
+  border-radius:16px; padding:16px; margin-bottom:12px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);
+}
+.sec-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.sec-emoji { font-size:22px; }
+.sec-title { font-family:'Kaisei Decol',serif; font-size:15px; font-weight:700; flex:1; }
+.sec-score {
+  font-size:13px; font-weight:700; padding:3px 10px;
+  border-radius:20px; background:rgba(255,255,255,0.1);
+}
+.info-row { display:flex; justify-content:space-between; margin-bottom:6px; align-items:flex-start; }
+.info-lbl { font-size:11px; color:var(--muted); padding-top:1px; }
+.info-val { font-size:12px; font-weight:700; text-align:right; }
+.info-sub { font-size:10px; color:var(--muted); text-align:right; }
+.sec-note {
+  margin-top:10px; padding:10px 12px;
+  background:rgba(255,255,255,0.06); border-radius:10px;
+  font-size:12px; line-height:1.7; color:var(--text);
+}
+.tag {
+  display:inline-block; padding:2px 10px; border-radius:20px;
+  font-size:11px; font-weight:700; margin:2px;
+}
+.tagbox { margin-bottom:10px; }
+
+/* LUCKY */
+.lucky-box {
+  border-radius:16px; padding:16px; margin-bottom:12px;
+  background:linear-gradient(135deg,rgba(255,215,0,0.1),rgba(255,107,53,0.1));
+  border:1px solid rgba(255,215,0,0.3);
+}
+.lucky-title { font-family:'Kaisei Decol',serif; font-size:14px; font-weight:700; margin-bottom:10px; color:var(--yellow); text-align:center; }
+.lucky-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.lucky-item { background:rgba(255,255,255,0.06); border-radius:10px; padding:10px; text-align:center; }
+.lucky-item-lbl { font-size:9px; color:var(--muted); margin-bottom:4px; }
+.lucky-item-val { font-size:14px; font-weight:700; }
+
+.footer { text-align:center; padding:16px 0; color:var(--muted); font-size:10px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="header-star">⭐</div>
+    <div class="header-title">ぼくのおみくじ</div>
+    <div class="header-name">2015年5月20日生まれ</div>
+  </div>
+
+  <div class="date-box">
+    <div class="date-info">
+      <div class="date-lbl">今日の日付</div>
+      <div class="date-display" id="dateDisplay">—</div>
+    </div>
+    <input type="date" id="datePicker">
+  </div>
+
+  <div class="omikuji-wrap">
+    <button class="omikuji-btn" onclick="drawOmikuji()">🎋 おみくじをひく！</button>
+    <div class="omikuji-sub">タップしておみくじをひこう✨</div>
+  </div>
+
+  <div class="result-wrap" id="result"></div>
+</div>
+
+<script>
+// ══════════════════════════════
+// 確定データ
+// ══════════════════════════════
+const HONMEI = 3; // 三碧木星
+
+const SHICHU = {
+  nen:  { stem:"乙", branch:"未" },
+  tsuki:{ stem:"辛", branch:"巳" },
+  hi:   { stem:"丙", branch:"申" },
+  toki: { stem:"庚", branch:"辰" },
+};
+
+const MAYA = {
+  kin: 47, tone: 8,
+  sign: "青い手（MANIK）",
+  meaning: "癒し・達成・奉仕・手仕事",
+  latent: "黄色い太陽",
+};
+
+const HORO = {
+  sun:  { name:"双子座", el:"風", deg:"28°" },
+  moon: { name:"双子座", el:"風", deg:"22°38'" },
+  asc:  { name:"獅子座", deg:"7°21'" },
+  mc:   { name:"牡牛座", deg:"28°04'" },
+};
+
+// ══════════════════════════════
+// 定数
+// ══════════════════════════════
+const KYUSEI_NAMES = ["","一白水星","二黒土星","三碧木星","四緑木星","五黄土星","六白金星","七赤金星","八白土星","九紫火星"];
+const KYUSEI_EL    = ["","水","土","木","木","土","金","金","土","火"];
+const KYUSEI_GOOD  = {1:[6,7],2:[8,9],3:[1,4],4:[3,1],5:[2,8],6:[1,7],7:[6,1],8:[5,9],9:[2,5]};
+const KYUSEI_BAD   = {1:[2,5,8],2:[3,4],3:[5,2],4:[5,2],5:[4,3,6,7,1,9],6:[2,5,8],7:[2,5,8],8:[3,4],9:[6,7]};
+
+const TEN_STEMS = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
+const TWELVE_BR = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
+const TWELVE_FORTUNES = ["長生","沐浴","冠帯","建禄","帝旺","衰","病","死","墓","絶","胎","養"];
+const FORTUNE_SCORES  = [80,30,70,90,100,50,20,10,40,15,60,65];
+
+const TZOLKIN_SIGNS = ["イミシュ","イク","アクバル","カン","チクチャン","キミ","マニク","ラマット","ムルク","オク","チュエン","エブ","ベン","イシュ","メン","キブ","カバン","エツナブ","カワク","アハウ"];
+const TZOLKIN_MEAN  = ["始まりの力","風と変化","夢と神秘","種と成長","生命力","変容","癒しと達成","豊かさと光","感情と浄化","仲間と忠誠","芸術と遊び","奉仕と謙虚","知恵と方向","魔法と内なる力","視野と洞察","記憶と許し","地球と進化","真実と鋭敏","変革と創造","光と悟り"];
+const HAAB_MONTHS   = ["ポプ","ウォ","シップ","ソッツ","セク","シュル","ヤシュキン","モル","チェン","ヤシュ","サック","ケフ","マック","カンキン","ムワン","パックス","カヤブ","クムク","ウァヤブ"];
+
+const ASPECTS = [
+  {name:"コンジャンクション",type:"強調",desc:"エネルギーが一点集中"},
+  {name:"セクスタイル",type:"調和",desc:"チャンスと協力の流れ"},
+  {name:"スクエア",type:"緊張",desc:"課題と成長の機会"},
+  {name:"トライン",type:"調和",desc:"流れるような好運"},
+  {name:"オポジション",type:"対立",desc:"バランスと統合"},
+];
+
+const ENERGY_NAMES  = ["拡大","内省","前進","調整","絶頂","休息","展開","蓄積","開花","転換"];
+const ENERGY_SCORES = [85,40,75,60,90,30,70,55,80,45];
+
+// おみくじ結果
+const OMIKUJI = [
+  { label:"大吉！", emoji:"🏆", color:"#FFD700", glow:"rgba(255,215,0,0.3)", stars:"★★★★★",
+    msg:"今日はさいっこうの日！なんでもうまくいくよ。友だちとあそんだり、チャレンジしてみよう！" },
+  { label:"吉！",   emoji:"😄", color:"#4ECDC4", glow:"rgba(78,205,196,0.3)", stars:"★★★★☆",
+    msg:"いい感じの日！好きなことをやってみよう。きっとうまくいくよ！" },
+  { label:"中吉！", emoji:"😊", color:"#45B7D1", glow:"rgba(69,183,209,0.3)", stars:"★★★☆☆",
+    msg:"ふつうにいい日だよ。あせらずゆっくりやれば、なんでもできる！" },
+  { label:"小吉",   emoji:"🌱", color:"#A855F7", glow:"rgba(168,85,247,0.3)", stars:"★★☆☆☆",
+    msg:"今日はちょっとエネルギーをためる日。休んだり、じっくり考えるといいよ。" },
+  { label:"末吉",   emoji:"🌙", color:"#FF6B9D", glow:"rgba(255,107,157,0.3)", stars:"★☆☆☆☆",
+    msg:"今日はゆっくりすごそう。やさしくていねいにやることが大事な日だよ。" },
+];
+
+// ラッキーアイテム
+const LUCKY_COLORS = ["赤","青","黄","緑","白","オレンジ","むらさき","ピンク","金","銀"];
+const LUCKY_FOODS  = ["ラーメン","カレー","おにぎり","ピザ","すし","うどん","アイス","チョコ","から揚げ","たこやき"];
+const LUCKY_SPOTS  = ["公園","図書館","体育館","プール","友だちの家","学校の校庭","お店","山・自然","海・川","近所の道"];
+const LUCKY_WORDS  = ["がんばれ！","ありがとう","やってみよう","だいじょうぶ","すごいね！","いっしょに！","たのしもう","できる！","ゆっくりね","いいね！"];
+
+// ══════════════════════════════
+// 計算
+// ══════════════════════════════
+function kyuseiDaily(d){
+  const base=new Date(1912,0,1);
+  const diff=Math.floor((d-base)/86400000);
+  const r=((diff%9)+9)%9;
+  return [9,8,7,6,5,4,3,2,1][r];
+}
+function daySB(d){
+  const base=new Date(1900,0,1);
+  const diff=Math.floor((d-base)/86400000);
+  return {stem:TEN_STEMS[((diff%10)+10)%10], branch:TWELVE_BR[((diff%12)+12)%12]};
+}
+function dailyFortune(dStem,bStem){
+  const si=TEN_STEMS.indexOf(dStem), bi=TEN_STEMS.indexOf(bStem);
+  const fi=Math.floor(((si-bi+10)%10)*1.2)%12;
+  return {name:TWELVE_FORTUNES[fi], score:FORTUNE_SCORES[fi]};
+}
+function mayaDate(d){
+  const corr=584283;
+  const jdn=Math.floor((d-new Date(-4713,10,24))/86400000);
+  const tz=(jdn-corr+4+260*1000)%260;
+  const tone=(tz%13)+1, sign=tz%20;
+  const haab=(jdn-corr+348+365*1000)%365;
+  return {kin:tz+1, tone, sign, signName:TZOLKIN_SIGNS[sign], meaning:TZOLKIN_MEAN[sign],
+    haabMonth:haab<360?HAAB_MONTHS[Math.floor(haab/20)]:"ウァヤブ", haabDay:haab%20};
+}
+function sunSign(m,d){
+  const Z=[
+    {name:"牡羊座",el:"火",sm:3,sd:21,em:4,ed:19},{name:"牡牛座",el:"土",sm:4,sd:20,em:5,ed:20},
+    {name:"双子座",el:"風",sm:5,sd:21,em:6,ed:20},{name:"蟹座",el:"水",sm:6,sd:21,em:7,ed:22},
+    {name:"獅子座",el:"火",sm:7,sd:23,em:8,ed:22},{name:"乙女座",el:"土",sm:8,sd:23,em:9,ed:22},
+    {name:"天秤座",el:"風",sm:9,sd:23,em:10,ed:22},{name:"蠍座",el:"水",sm:10,sd:23,em:11,ed:21},
+    {name:"射手座",el:"火",sm:11,sd:22,em:12,ed:21},{name:"山羊座",el:"土",sm:12,sd:22,em:1,ed:19},
+    {name:"水瓶座",el:"風",sm:1,sd:20,em:2,ed:18},{name:"魚座",el:"水",sm:2,sd:19,em:3,ed:20},
+  ];
+  for(const z of Z){
+    if(z.sm<=z.em){if((m===z.sm&&d>=z.sd)||(m===z.em&&d<=z.ed)||(m>z.sm&&m<z.em))return z;}
+    else{if((m===z.sm&&d>=z.sd)||m>z.sm||(m===z.em&&d<=z.ed)||m<z.em)return z;}
+  }
+  return Z[0];
+}
+
+function seededRand(seed){
+  let s=seed;
+  return ()=>{ s=(s*9301+49297)%233280; return s/233280; };
+}
+
+function compute(td){
+  const dk=kyuseiDaily(td);
+  const good=(KYUSEI_GOOD[HONMEI]||[]).includes(dk);
+  const bad=(KYUSEI_BAD[HONMEI]||[]).includes(dk);
+  const kyuseiScore=good?85:bad?30:60;
+
+  const dsb=daySB(td);
+  const fort=dailyFortune(dsb.stem, SHICHU.hi.stem);
+
+  const tMaya=mayaDate(td);
+  const kinDiff=Math.abs(MAYA.kin-tMaya.kin);
+  const mayaScore=(tMaya.tone===MAYA.tone)?88:(kinDiff%13===0)?75:(kinDiff%20===0)?70:55;
+
+  const tSun=sunSign(td.getMonth()+1,td.getDate());
+  const aspect=ASPECTS[Math.floor((td-new Date(td.getFullYear(),0,1))/86400000)%ASPECTS.length];
+  // 双子座(風)×ASC獅子座(火) → 風×火は活性化
+  const elBonus=tSun.el==="風"?90:tSun.el==="火"?80:tSun.el==="土"?60:65;
+  const aBonus=aspect.type==="調和"?10:aspect.type==="緊張"?-5:5;
+  const horoScore=Math.min(100,elBonus+aBonus);
+
+  const dayIdx=Math.floor((td-new Date(td.getFullYear(),0,1))/86400000)%10;
+  const sanmeiScore=ENERGY_SCORES[dayIdx];
+
+  const overall=Math.round(kyuseiScore*.2+fort.score*.25+mayaScore*.2+horoScore*.2+sanmeiScore*.15);
+
+  // シード乱数でラッキーアイテム決定（日付が同じなら同じ結果）
+  const seed=td.getFullYear()*10000+(td.getMonth()+1)*100+td.getDate();
+  const rand=seededRand(seed);
+  const luckyColor=LUCKY_COLORS[Math.floor(rand()*LUCKY_COLORS.length)];
+  const luckyFood=LUCKY_FOODS[Math.floor(rand()*LUCKY_FOODS.length)];
+  const luckySpot=LUCKY_SPOTS[Math.floor(rand()*LUCKY_SPOTS.length)];
+  const luckyWord=LUCKY_WORDS[Math.floor(rand()*LUCKY_WORDS.length)];
+
+  return {
+    kyusei:{score:kyuseiScore,dk,good,bad},
+    shichu:{score:fort.score,fort,dsb},
+    maya:{score:mayaScore,tMaya},
+    horo:{score:horoScore,tSun,aspect},
+    sanmei:{score:sanmeiScore,energy:ENERGY_NAMES[dayIdx]},
+    overall,
+    lucky:{color:luckyColor,food:luckyFood,spot:luckySpot,word:luckyWord},
+  };
+}
+
+function getOmikuji(score){
+  if(score>=85)return OMIKUJI[0];
+  if(score>=70)return OMIKUJI[1];
+  if(score>=55)return OMIKUJI[2];
+  if(score>=40)return OMIKUJI[3];
+  return OMIKUJI[4];
+}
+
+// ══════════════════════════════
+// RENDER
+// ══════════════════════════════
+function infoRow(lbl,val,sub=''){
+  return `<div class="info-row">
+    <span class="info-lbl">${lbl}</span>
+    <div><div class="info-val">${val}</div>${sub?`<div class="info-sub">${sub}</div>`:''}</div>
+  </div>`;
+}
+
+function drawOmikuji(){
+  const picker=document.getElementById('datePicker');
+  const td=picker.value?new Date(picker.value+'T12:00:00'):new Date();
+  const data=compute(td);
+  const om=getOmikuji(data.overall);
+
+  const COLS={k:"#A855F7",s:"#FF6B9D",m:"#4ECDC4",h:"#FF6B35",a:"#45B7D1"};
+  const bars=[
+    {lbl:"九星",s:data.kyusei.score,c:COLS.k},
+    {lbl:"四柱",s:data.shichu.score,c:COLS.s},
+    {lbl:"マヤ",s:data.maya.score,  c:COLS.m},
+    {lbl:"星座",s:data.horo.score,  c:COLS.h},
+    {lbl:"算命",s:data.sanmei.score,c:COLS.a},
+  ].map(b=>`<div class="mini-col">
+    <div class="mini-track"><div class="mini-fill" style="height:${b.s}%;background:${b.c}99"></div></div>
+    <div class="mini-lbl">${b.lbl}</div>
+    <div class="mini-val" style="color:${b.c}">${b.s}</div>
+  </div>`).join('');
+
+  // 九星コメント
+  const kyuseiRel=data.kyusei.good?"✨ 相生（いい感じ！）":data.kyusei.bad?"⚠️ 相剋（ちょっと注意）":"〇 ふつう";
+  const kyuseiNote=data.kyusei.score>=70?"今日は九星の流れがいいよ！積極的に動こう！":data.kyusei.score<=40?"今日はのんびりする日。ゆっくり休もう。":"いつもどおりの日。コツコツやれば大丈夫！";
+
+  // 四柱コメント
+  const shichuNote=data.shichu.score>=80?`「${data.shichu.fort.name}」の日！丙火のパワーが全開。エネルギーあふれる一日！`:data.shichu.score<=30?`「${data.shichu.fort.name}」の日。ゆっくり充電しよう。`:` 「${data.shichu.fort.name}」の日。着実にやれば結果が出る！`;
+
+  // マヤコメント
+  const mayaNote=data.maya.score>=80?"今日のKINとぼくのKINが共鳴！宇宙のリズムに乗っている日！":data.maya.score>=65?"KINのエネルギーを感じながらすごそう。":"今日は新しいKINのエネルギーを受け取る日。";
+
+  // ホロコメント
+  const horoNote=data.horo.score>=80?`太陽が${data.horo.tSun.name}を通過中。双子座×獅子座の風と火が燃え上がる！`:data.horo.score>=60?`${data.horo.aspect.name}が働いている。${data.horo.aspect.desc}を意識して。`:"今日は天体の課題の日。じっくり考えることで成長できる！";
+
+  // 算命コメント
+  const sanNote=data.sanmei.score>=80?`今日は「${data.sanmei.energy}」の位相！天胡星・禄存星のエネルギーが高まり、なんでも楽しくなる！`:data.sanmei.score>=55?`「${data.sanmei.energy}」の流れ。自分らしくいれば力が出る。`:`「${data.sanmei.energy}」の時期。無理せず、ゆっくりいこう。`;
+
+  const html=`
+    <div class="overall-card" style="border-color:${om.color};box-shadow:0 0 40px ${om.glow}">
+      <span class="overall-emoji">${om.emoji}</span>
+      <div class="overall-label" style="color:${om.color}">${om.label}</div>
+      <div class="score-stars">${om.stars}</div>
+      <div class="overall-advice">${om.msg}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">5つの占いの総合スコア：${data.overall}点</div>
+      <div class="mini-bars">${bars}</div>
+    </div>
+
+    <div class="lucky-box">
+      <div class="lucky-title">🌟 今日のラッキー 🌟</div>
+      <div class="lucky-grid">
+        <div class="lucky-item">
+          <div class="lucky-item-lbl">🎨 ラッキーカラー</div>
+          <div class="lucky-item-val" style="color:var(--yellow)">${data.lucky.color}</div>
+        </div>
+        <div class="lucky-item">
+          <div class="lucky-item-lbl">🍜 ラッキーフード</div>
+          <div class="lucky-item-val" style="color:var(--orange)">${data.lucky.food}</div>
+        </div>
+        <div class="lucky-item">
+          <div class="lucky-item-lbl">📍 ラッキースポット</div>
+          <div class="lucky-item-val" style="color:var(--green)">${data.lucky.spot}</div>
+        </div>
+        <div class="lucky-item">
+          <div class="lucky-item-lbl">💬 ラッキーワード</div>
+          <div class="lucky-item-val" style="color:var(--pink)">${data.lucky.word}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec" style="border-color:${COLS.k}44">
+      <div class="sec-head">
+        <span class="sec-emoji">☯️</span>
+        <span class="sec-title">九星気学</span>
+        <span class="sec-score" style="color:${COLS.k}">${data.kyusei.score}点</span>
+      </div>
+      ${infoRow("本命星",`${HONMEI} ${KYUSEI_NAMES[HONMEI]}`,`元素：${KYUSEI_EL[HONMEI]}`)}
+      ${infoRow("今日の日盤",`${data.kyusei.dk} ${KYUSEI_NAMES[data.kyusei.dk]}`)}
+      ${infoRow("相性",kyuseiRel)}
+      <div class="sec-note">${kyuseiNote}</div>
+    </div>
+
+    <div class="sec" style="border-color:${COLS.s}44">
+      <div class="sec-head">
+        <span class="sec-emoji">🀄</span>
+        <span class="sec-title">四柱推命</span>
+        <span class="sec-score" style="color:${COLS.s}">${data.shichu.score}点</span>
+      </div>
+      <div style="display:flex;gap:5px;margin-bottom:10px">
+        ${['年柱','月柱','日柱','時柱'].map((lbl,i)=>{
+          const cols=[SHICHU.nen,SHICHU.tsuki,SHICHU.hi,SHICHU.toki];
+          return `<div style="flex:1;text-align:center;background:rgba(255,255,255,0.06);border-radius:8px;padding:8px 4px">
+            <div style="font-size:9px;color:var(--muted)">${lbl}</div>
+            <div style="font-size:17px;font-weight:700;color:${COLS.s}">${cols[i].stem}</div>
+            <div style="font-size:15px">${cols[i].branch}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      ${infoRow("今日の干支",`${data.shichu.dsb.stem}${data.shichu.dsb.branch}`)}
+      ${infoRow("十二運",data.shichu.fort.name)}
+      <div class="sec-note">${shichuNote}</div>
+    </div>
+
+    <div class="sec" style="border-color:${COLS.m}44">
+      <div class="sec-head">
+        <span class="sec-emoji">🌀</span>
+        <span class="sec-title">マヤ暦</span>
+        <span class="sec-score" style="color:${COLS.m}">${data.maya.score}点</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:10px">
+        <div style="flex:1;background:rgba(255,255,255,0.06);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:4px">ぼくのKIN</div>
+          <div style="font-size:22px;font-weight:700;color:${COLS.m}">${MAYA.kin}</div>
+          <div style="font-size:11px">音${MAYA.tone} ${MAYA.sign}</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,0.06);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:4px">今日のKIN</div>
+          <div style="font-size:22px;font-weight:700;color:${COLS.m}">${data.maya.tMaya.kin}</div>
+          <div style="font-size:11px">音${data.maya.tMaya.tone} ${data.maya.tMaya.signName}</div>
+        </div>
+      </div>
+      ${infoRow("今日の紋章の力",data.maya.tMaya.meaning)}
+      ${infoRow("潜在意識",MAYA.latent)}
+      <div class="sec-note">${mayaNote}</div>
+    </div>
+
+    <div class="sec" style="border-color:${COLS.h}44">
+      <div class="sec-head">
+        <span class="sec-emoji">⭐</span>
+        <span class="sec-title">西洋占星術</span>
+        <span class="sec-score" style="color:${COLS.h}">${data.horo.score}点</span>
+      </div>
+      <div class="tagbox">
+        ${[
+          {t:`☉ ${HORO.sun.name}`,c:COLS.h},
+          {t:`☽ ${HORO.moon.name}`,c:COLS.m},
+          {t:`ASC ${HORO.asc.name}`,c:COLS.k},
+        ].map(x=>`<span class="tag" style="background:${x.c}22;border:1px solid ${x.c}55;color:${x.c}">${x.t}</span>`).join('')}
+      </div>
+      ${infoRow("今日の太陽星座",`${data.horo.tSun.name}（${data.horo.tSun.el}）`)}
+      ${infoRow("アスペクト",data.horo.aspect.name,data.horo.aspect.desc)}
+      <div class="sec-note">${horoNote}</div>
+    </div>
+
+    <div class="sec" style="border-color:${COLS.a}44">
+      <div class="sec-head">
+        <span class="sec-emoji">☵</span>
+        <span class="sec-title">算命学</span>
+        <span class="sec-score" style="color:${COLS.a}">${data.sanmei.score}点</span>
+      </div>
+      ${infoRow("日干の主星","天胡星",`丙火・光・太陽・リーダー`)}
+      ${infoRow("守護神","禄存星・貫索星")}
+      ${infoRow("今日のエネルギー",`${data.sanmei.energy}（${data.sanmei.score}%）`)}
+      <div class="sec-note">${sanNote}</div>
+    </div>
+
+    <div class="footer">5つの占いで毎日のエネルギーをチェック！<br>また明日もひいてね ✨</div>
+  `;
+
+  const resultEl=document.getElementById('result');
+  resultEl.innerHTML=html;
+  resultEl.classList.add('show');
+  resultEl.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ══════════════════════════════
+// INIT
+// ══════════════════════════════
+const picker=document.getElementById('datePicker');
+const WEEKDAYS=["日","月","火","水","木","金","土"];
+function updateDate(){
+  const d=picker.value?new Date(picker.value+'T12:00:00'):new Date();
+  document.getElementById('dateDisplay').textContent=
+    `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）`;
+  // 日付変わったら結果リセット
+  document.getElementById('result').classList.remove('show');
+}
+const today=new Date();
+const pad=n=>String(n).padStart(2,'0');
+picker.value=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+picker.addEventListener('change',updateDate);
+updateDate();
+</script>
+</body>
+</html>
